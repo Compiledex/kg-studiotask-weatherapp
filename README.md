@@ -1,9 +1,12 @@
 # kg-class-demo
 
-A single self-contained `index.html` page with two tabs:
+A single self-contained `index.html` page with three tabs:
 
 1. **Hirakata Weather** – a 7-day forecast for Hirakata, Osaka Prefecture, Japan.
-2. **Norway Earthquakes** – 50 years of earthquakes in and around Norway (M ≥ 3.0, 1976–2026),
+2. **Hirakata vs Bergen** – the same 7 days side by side for Hirakata, Japan and Bergen, Norway:
+   summary-difference cards, a high-temperature line chart with the day-by-day gap shaded, a
+   grouped rainfall bar chart, and a day-by-day card grid.
+3. **Norway Earthquakes** – 50 years of earthquakes in and around Norway (M ≥ 3.0, 1976–2026),
    shown as an epicentre map, a year/magnitude scatter, a per-year bar chart, stat cards
    and a "strongest events" table.
 
@@ -19,7 +22,7 @@ baked into the file, so it works offline once loaded.
 
 | Data | Source | Notes |
 |------|--------|-------|
-| Weather forecast | [Open-Meteo](https://open-meteo.com/) | Snapshot taken 4 Sep 2026 (JST); values are hard-coded, not live. |
+| Weather forecast | [Open-Meteo](https://open-meteo.com/) | Hirakata and Bergen, snapshot taken 4 Sep 2026; values are hard-coded, not live. |
 | Earthquakes | [USGS FDSN event catalogue](https://earthquake.usgs.gov/fdsnws/event/1/) | Region box 58–71.5°N, 3–31°E; magnitude ≥ 3.0. Includes mainland, North Sea, Norwegian Sea and border zones. |
 | Coastline | [Natural Earth](https://www.naturalearthdata.com/) 1:110m (via [world.geo.json](https://github.com/johan/world.geo.json)) | Low-resolution outlines for Norway, Sweden and Finland. |
 
@@ -45,12 +48,17 @@ for c in NOR SWE FIN; do
   curl -sL "https://raw.githubusercontent.com/johan/world.geo.json/master/countries/$c.geo.json" -o "$c.json"
 done
 
-# 3. Build index.html
+# 3. Weather forecasts (Hirakata, then Bergen)
+DAILY="weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,relative_humidity_2m_mean"
+curl -s "https://api.open-meteo.com/v1/forecast?latitude=34.8144&longitude=135.6497&daily=$DAILY&timezone=auto&forecast_days=7" -o hirakata.json
+curl -s "https://api.open-meteo.com/v1/forecast?latitude=60.3913&longitude=5.3221&daily=$DAILY&timezone=auto&forecast_days=7" -o bergen.json
+
+# 4. Build index.html
 python3 build_index.py
 ```
 
-(`build_index.py` and the intermediate `quakes.json` / `land.json` are kept in the scratchpad
-used to author this demo, not committed.)
+(`build_index.py` and the intermediate `quakes.json` / `land.json` / `hir.json` / `ber.json`
+are kept in the scratchpad used to author this demo, not committed.)
 
 ## License
 

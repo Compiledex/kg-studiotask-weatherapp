@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hirakata Forecast &amp; Norway Quakes</title>
+<title>Hirakata &amp; Bergen Weather + Norway Quakes</title>
 <style>
   :root {
     --bg: #eef2f7;
@@ -27,10 +27,12 @@
   }
   .tabs {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 6px;
     background: #dde4ee;
     padding: 5px;
-    border-radius: 999px;
+    border-radius: 22px;
     margin-bottom: 26px;
   }
   .tabs button {
@@ -76,6 +78,58 @@
   .temps .lo { color: var(--muted); font-weight: 400; }
   .meta { margin-top: 10px; font-size: .76rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
   .meta .rain { color: var(--rain); font-weight: 600; }
+
+  /* ---------- compare ---------- */
+  .cmpstats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .cmpstat {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 2px 10px rgba(20,30,60,.07);
+    border-left: 5px solid var(--border);
+  }
+  .cmpstat.hot { border-left-color: #f97316; }
+  .cmpstat.cool { border-left-color: #2f6df6; }
+  .cmpstat.wet { border-left-color: #0ea5e9; }
+  .cmpstat .num { font-size: 1.7rem; font-weight: 800; line-height: 1.05; }
+  .cmpstat .lbl { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+
+  .citylegend { display: flex; gap: 18px; justify-content: center; margin-bottom: 18px; font-size: .85rem; font-weight: 600; }
+  .citylegend span { display: inline-flex; align-items: center; gap: 7px; }
+  .citylegend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  .cHir { color: #d9631a; } .cHir i { background: #f97316; }
+  .cBer { color: #2f6df6; } .cBer i { background: #2f6df6; }
+
+  .cmpgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .cmpday {
+    background: var(--card);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(20,30,60,.07);
+    text-align: center;
+  }
+  .cmpday .dhead { font-weight: 700; padding: 8px 0 2px; }
+  .cmpday .ddate { color: var(--muted); font-size: .75rem; padding-bottom: 8px; }
+  .cmpday .side { padding: 10px 8px; }
+  .cmpday .side.h { background: #fff3ea; }
+  .cmpday .side.b { background: #eef3fd; }
+  .cmpday .cname { font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+  .cmpday .side.h .cname { color: #d9631a; }
+  .cmpday .side.b .cname { color: #2f6df6; }
+  .cmpday .cico { font-size: 1.7rem; line-height: 1; margin: 3px 0; }
+  .cmpday .ctemp { font-weight: 700; }
+  .cmpday .ctemp .lo { color: var(--muted); font-weight: 400; }
+  .cmpday .csub { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+  .cmpday .delta { padding: 7px 0; font-size: .8rem; font-weight: 700; color: #d9631a; background: #fff8f2; }
 
   /* ---------- quakes ---------- */
   .stats {
@@ -155,6 +209,7 @@
 
 <div class="tabs">
   <button data-tab="weather" class="active">Hirakata Weather</button>
+  <button data-tab="compare">Hirakata vs Bergen</button>
   <button data-tab="quakes">Norway Earthquakes</button>
 </div>
 
@@ -168,6 +223,43 @@
   <footer style="margin-top:22px">
     Data: Open-Meteo. Temperatures in &deg;C, precipitation totals in mm, wind in km/h.<br>
     Forecast confidence drops after day 3&ndash;4; check a live source before travel.
+  </footer>
+</section>
+
+<!-- ============ COMPARE ============ -->
+<section class="panel" id="compare">
+  <header>
+    <h1>Hirakata <span style="color:#f97316">JP</span> vs Bergen <span style="color:#2f6df6">NO</span></h1>
+    <p>Same 7 days &middot; 34.8&deg;N vs 60.4&deg;N &middot; issued 4 Sep 2026</p>
+  </header>
+
+  <div class="cmpstats" id="cmpstats"></div>
+
+  <div class="citylegend">
+    <span class="cHir"><i></i>Hirakata, Japan</span>
+    <span class="cBer"><i></i>Bergen, Norway</span>
+  </div>
+
+  <div class="chartcard">
+    <h2>Daily high temperature</h2>
+    <div class="sub">The shaded band is the day-by-day gap between the two cities.</div>
+    <svg id="tempchart" viewBox="0 0 1000 360"></svg>
+  </div>
+
+  <div class="chartcard">
+    <h2>Daily rainfall</h2>
+    <div class="sub">Millimetres of precipitation expected each day.</div>
+    <svg id="rainchart" viewBox="0 0 1000 300"></svg>
+  </div>
+
+  <div class="chartcard">
+    <h2>Day by day</h2>
+    <div class="sub">Hirakata on the warm side, Bergen on the cool side. Difference is in high temperature.</div>
+    <div class="cmpgrid" id="cmpgrid"></div>
+  </div>
+
+  <footer>
+    Data: Open-Meteo. Temperatures &deg;C, rainfall mm, wind km/h. Both forecasts issued 4 Sep 2026 for local dates.
   </footer>
 </section>
 
@@ -281,6 +373,109 @@ function el(name, attrs, parent) {
   if (parent) parent.appendChild(n);
   return n;
 }
+
+/* ---------------- compare: Hirakata vs Bergen ---------------- */
+(function () {
+  const HIR = [{"date": "2026-09-04", "code": 63, "hi": 24.0, "lo": 21.8, "feels": 29.2, "precip": 22.7, "pop": 97, "wind": 6.6, "rh": 95}, {"date": "2026-09-05", "code": 51, "hi": 29.1, "lo": 20.7, "feels": 32.1, "precip": 0.4, "pop": 76, "wind": 6.8, "rh": 78}, {"date": "2026-09-06", "code": 61, "hi": 27.7, "lo": 22.0, "feels": 29.2, "precip": 7.4, "pop": 78, "wind": 12.2, "rh": 75}, {"date": "2026-09-07", "code": 95, "hi": 27.1, "lo": 22.0, "feels": 32.5, "precip": 68.1, "pop": 84, "wind": 15.3, "rh": 91}, {"date": "2026-09-08", "code": 96, "hi": 28.5, "lo": 23.6, "feels": 33.2, "precip": 23.8, "pop": 58, "wind": 14.1, "rh": 92}, {"date": "2026-09-09", "code": 55, "hi": 26.9, "lo": 23.7, "feels": 31.4, "precip": 12.6, "pop": 54, "wind": 16.2, "rh": 92}, {"date": "2026-09-10", "code": 53, "hi": 27.5, "lo": 21.7, "feels": 29.4, "precip": 6.9, "pop": 57, "wind": 15.2, "rh": 79}];
+  const BER = [{"date": "2026-09-04", "code": 63, "hi": 16.9, "lo": 11.1, "feels": 16.6, "precip": 17.5, "pop": 100, "wind": 13.7, "rh": 88}, {"date": "2026-09-05", "code": 63, "hi": 15.8, "lo": 12.1, "feels": 15.5, "precip": 23.1, "pop": 98, "wind": 19.1, "rh": 90}, {"date": "2026-09-06", "code": 80, "hi": 15.2, "lo": 11.2, "feels": 13.6, "precip": 8.95, "pop": 92, "wind": 16.3, "rh": 87}, {"date": "2026-09-07", "code": 81, "hi": 15.0, "lo": 11.5, "feels": 15.3, "precip": 28.6, "pop": 98, "wind": 26.6, "rh": 97}, {"date": "2026-09-08", "code": 95, "hi": 12.3, "lo": 9.9, "feels": 9.8, "precip": 26.1, "pop": 92, "wind": 20.5, "rh": 97}, {"date": "2026-09-09", "code": 55, "hi": 14.4, "lo": 9.3, "feels": 12.8, "precip": 7.8, "pop": 64, "wind": 15.5, "rh": 86}, {"date": "2026-09-10", "code": 51, "hi": 15.0, "lo": 6.9, "feels": 13.3, "precip": 0.6, "pop": 37, "wind": 11.1, "rh": 81}];
+  const N = HIR.length;
+  const days = HIR.map(d => new Date(d.date + 'T00:00:00'));
+  const dow = d => d.toLocaleDateString('en-US', { weekday: 'short' });
+  const md = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const avg = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const sum = a => a.reduce((s, x) => s + x, 0);
+  const HIA = avg(HIR.map(d => d.hi)), BEA = avg(BER.map(d => d.hi));
+  const dLo = avg(HIR.map(d => d.lo)) - avg(BER.map(d => d.lo));
+  const rainH = sum(HIR.map(d => d.precip)), rainB = sum(BER.map(d => d.precip));
+  const windH = avg(HIR.map(d => d.wind)), windB = avg(BER.map(d => d.wind));
+
+  document.getElementById('cmpstats').innerHTML = `
+    <div class="cmpstat hot"><div class="num">+${(HIA - BEA).toFixed(1)}&deg;C</div>
+      <div class="lbl">warmer by day in Hirakata &mdash; avg high ${HIA.toFixed(0)}&deg; vs ${BEA.toFixed(0)}&deg;</div></div>
+    <div class="cmpstat hot"><div class="num">+${dLo.toFixed(1)}&deg;C</div>
+      <div class="lbl">warmer at night in Hirakata &mdash; avg low ${avg(HIR.map(d=>d.lo)).toFixed(0)}&deg; vs ${avg(BER.map(d=>d.lo)).toFixed(0)}&deg;</div></div>
+    <div class="cmpstat cool"><div class="num">+${(windB - windH).toFixed(0)} km/h</div>
+      <div class="lbl">windier in Bergen &mdash; avg peak ${windB.toFixed(0)} vs ${windH.toFixed(0)} km/h</div></div>
+    <div class="cmpstat wet"><div class="num">${rainH.toFixed(0)} vs ${rainB.toFixed(0)} mm</div>
+      <div class="lbl">7-day rain total, Hirakata vs Bergen &mdash; both wet</div></div>`;
+
+  /* temperature lines with gap band */
+  (function () {
+    const W = 1000, H = 360, pl = 42, pr = 16, pt = 28, pb = 38;
+    const svg = document.getElementById('tempchart');
+    const allT = [...HIR, ...BER].map(d => d.hi);
+    const y0 = Math.floor((Math.min(...allT) - 3) / 5) * 5;
+    const y1 = Math.ceil((Math.max(...allT) + 3) / 5) * 5;
+    const px = i => pl + i * (W - pl - pr) / (N - 1);
+    const py = t => H - pb - (t - y0) / (y1 - y0) * (H - pt - pb);
+    for (let t = y0; t <= y1; t += 5) {
+      el('line', { x1: pl, y1: py(t), x2: W - pr, y2: py(t), class: 'tickline' }, svg);
+      el('text', { x: pl - 8, y: py(t) + 4, 'text-anchor': 'end', class: 'ticktext' }, svg).textContent = t + '°';
+    }
+    HIR.forEach((_, i) => el('text', { x: px(i), y: H - pb + 18, 'text-anchor': 'middle', class: 'ticktext' }, svg).textContent = dow(days[i]));
+    const band = HIR.map((d, i) => px(i) + ',' + py(d.hi))
+      .concat(BER.map((_, i) => px(N - 1 - i) + ',' + py(BER[N - 1 - i].hi))).join(' ');
+    el('polygon', { points: band, fill: '#f97316', 'fill-opacity': 0.12 }, svg);
+    [[HIR, '#f97316'], [BER, '#2f6df6']].forEach(([arr, col]) => {
+      el('polyline', {
+        points: arr.map((d, i) => px(i) + ',' + py(d.hi)).join(' '),
+        fill: 'none', stroke: col, 'stroke-width': 3, 'stroke-linejoin': 'round'
+      }, svg);
+      arr.forEach((d, i) => {
+        el('circle', { cx: px(i), cy: py(d.hi), r: 4, fill: col }, svg);
+        el('text', { x: px(i), y: py(d.hi) - 10, 'text-anchor': 'middle', class: 'ticktext', fill: col, 'font-weight': 700 }, svg).textContent = d.hi.toFixed(0) + '°';
+      });
+    });
+  })();
+
+  /* rainfall grouped bars */
+  (function () {
+    const W = 1000, H = 300, pl = 40, pr = 16, pt = 20, pb = 34;
+    const svg = document.getElementById('rainchart');
+    const mx = Math.max(10, Math.ceil(Math.max(...[...HIR, ...BER].map(d => d.precip)) / 10) * 10);
+    const gw = (W - pl - pr) / N, bw = gw * 0.3;
+    for (let t = 0; t <= mx; t += (mx > 40 ? 20 : 10)) {
+      const yy = H - pb - t / mx * (H - pt - pb);
+      el('line', { x1: pl, y1: yy, x2: W - pr, y2: yy, class: 'tickline' }, svg);
+      el('text', { x: pl - 6, y: yy + 4, 'text-anchor': 'end', class: 'ticktext' }, svg).textContent = t;
+    }
+    HIR.forEach((_, i) => {
+      const gx = pl + i * gw + gw / 2;
+      [[HIR[i].precip, '#f97316', gx - bw - 1], [BER[i].precip, '#2f6df6', gx + 1]].forEach(([v, col, x]) => {
+        const h = v / mx * (H - pt - pb);
+        el('rect', { x: x, y: H - pb - h, width: bw, height: h, fill: col, rx: 3, 'fill-opacity': 0.9 }, svg);
+        if (v >= 1) el('text', { x: x + bw / 2, y: H - pb - h - 5, 'text-anchor': 'middle', class: 'ticktext' }, svg).textContent = v.toFixed(0);
+      });
+      el('text', { x: gx, y: H - pb + 16, 'text-anchor': 'middle', class: 'ticktext' }, svg).textContent = dow(days[i]);
+    });
+    el('line', { x1: pl, y1: H - pb, x2: W - pr, y2: H - pb, class: 'axis' }, svg);
+  })();
+
+  /* day-by-day cards */
+  document.getElementById('cmpgrid').innerHTML = HIR.map((h, i) => {
+    const b = BER[i];
+    const ih = (wmo[h.code] || ['❓'])[0], ib = (wmo[b.code] || ['❓'])[0];
+    return `<div class="cmpday">
+      <div class="dhead">${dow(days[i])}</div>
+      <div class="ddate">${md(days[i])}</div>
+      <div class="side h">
+        <div class="cname">Hirakata</div>
+        <div class="cico">${ih}</div>
+        <div class="ctemp">${h.hi.toFixed(0)}&deg; <span class="lo">/ ${h.lo.toFixed(0)}&deg;</span></div>
+        <div class="csub">${h.pop}% &middot; ${h.precip.toFixed(0)} mm</div>
+        <div class="csub">wind ${h.wind.toFixed(0)}</div>
+      </div>
+      <div class="side b">
+        <div class="cname">Bergen</div>
+        <div class="cico">${ib}</div>
+        <div class="ctemp">${b.hi.toFixed(0)}&deg; <span class="lo">/ ${b.lo.toFixed(0)}&deg;</span></div>
+        <div class="csub">${b.pop}% &middot; ${b.precip.toFixed(0)} mm</div>
+        <div class="csub">wind ${b.wind.toFixed(0)}</div>
+      </div>
+      <div class="delta">+${(h.hi - b.hi).toFixed(0)}&deg; warmer</div>
+    </div>`;
+  }).join('');
+})();
 
 const years = QUAKES.map(q => +q.t.slice(0, 4));
 const minY = Math.min(...years), maxY = Math.max(...years);
