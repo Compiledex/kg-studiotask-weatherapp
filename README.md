@@ -15,7 +15,7 @@ baked into the file, so it works offline once loaded.
 
 ## Viewing it
 
-- **Live:** [https://kvikklunsj34.github.io/kg-class-demo/](https://compiledex.github.io/kg-class-demo/)
+- **Live:** [DEMO](https://compiledex.github.io/kg-class-demo/)
 - **Local:** open `index.html` in any browser.
 
 ## Data sources
