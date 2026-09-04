@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hirakata 7-Day Forecast</title>
+<style>
+  :root {
+    --bg: #eef2f7;
+    --card: #ffffff;
+    --ink: #1a2233;
+    --muted: #6b7688;
+    --accent: #2f6df6;
+    --rain: #3a8dde;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 32px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header { text-align: center; margin-bottom: 28px; }
+  h1 { font-size: 1.8rem; }
+  header p { color: var(--muted); margin-top: 6px; font-size: .9rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    max-width: 1100px;
+    width: 100%;
+  }
+  .day {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 18px 14px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(20,30,60,.07);
+  }
+  .day .dow { font-weight: 700; font-size: 1.05rem; }
+  .day .date { color: var(--muted); font-size: .8rem; margin-bottom: 8px; }
+  .icon { font-size: 2.6rem; line-height: 1; margin: 6px 0; }
+  .desc { font-size: .82rem; color: var(--muted); min-height: 2.4em; margin-bottom: 8px; }
+  .temps { font-size: 1.05rem; font-weight: 600; }
+  .temps .lo { color: var(--muted); font-weight: 400; }
+  .meta { margin-top: 10px; font-size: .78rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  .meta .rain { color: var(--rain); font-weight: 600; }
+  footer { margin-top: 26px; color: var(--muted); font-size: .78rem; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hirakata, Japan &mdash; 7-Day Forecast</h1>
+  <p>Osaka Prefecture &middot; 34.81&deg;N, 135.65&deg;E &middot; Issued 4 Sep 2026 (JST)</p>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<footer>
+  Data: Open-Meteo. Temperatures in &deg;C, precipitation totals in mm, wind in km/h.<br>
+  Forecast confidence drops after day 3&ndash;4; check a live source before travel.
+</footer>
+
+<script>
+  const days = [
+    { date: "2026-09-04", code: 63, hi: 24.0, lo: 21.8, precip: 22.7, pop: 97, wind: 6.7 },
+    { date: "2026-09-05", code: 51, hi: 29.1, lo: 20.7, precip: 0.4,  pop: 76, wind: 6.6 },
+    { date: "2026-09-06", code: 61, hi: 27.7, lo: 22.0, precip: 7.4,  pop: 78, wind: 12.2 },
+    { date: "2026-09-07", code: 65, hi: 28.8, lo: 22.0, precip: 61.6, pop: 84, wind: 15.3 },
+    { date: "2026-09-08", code: 95, hi: 25.6, lo: 24.1, precip: 69.0, pop: 58, wind: 14.1 },
+    { date: "2026-09-09", code: 3,  hi: 29.0, lo: 21.9, precip: 0.0,  pop: 54, wind: 16.2 },
+    { date: "2026-09-10", code: 55, hi: 25.5, lo: 20.4, precip: 8.0,  pop: 57, wind: 15.2 }
+  ];
+
+  const wmo = {
+    0:  ["☀️", "Clear sky"],
+    1:  ["\u{1F324}️", "Mainly clear"],
+    2:  ["⛅", "Partly cloudy"],
+    3:  ["☁️", "Overcast"],
+    45: ["\u{1F32B}️", "Fog"],
+    48: ["\u{1F32B}️", "Rime fog"],
+    51: ["\u{1F326}️", "Light drizzle"],
+    53: ["\u{1F326}️", "Moderate drizzle"],
+    55: ["\u{1F327}️", "Dense drizzle"],
+    61: ["\u{1F327}️", "Slight rain"],
+    63: ["\u{1F327}️", "Moderate rain"],
+    65: ["\u{1F327}️", "Heavy rain"],
+    71: ["\u{1F328}️", "Slight snow"],
+    80: ["\u{1F326}️", "Rain showers"],
+    81: ["\u{1F327}️", "Rain showers"],
+    82: ["⛈️", "Violent rain showers"],
+    95: ["⛈️", "Thunderstorm"],
+    96: ["⛈️", "Thunderstorm w/ hail"]
+  };
+
+  const grid = document.getElementById("grid");
+  days.forEach(d => {
+    const dt = new Date(d.date + "T00:00:00");
+    const dow = dt.toLocaleDateString("en-US", { weekday: "short" });
+    const nice = dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const [icon, desc] = wmo[d.code] || ["❓", "Unknown"];
+    grid.insertAdjacentHTML("beforeend", `
+      <div class="day">
+        <div class="dow">${dow}</div>
+        <div class="date">${nice}</div>
+        <div class="icon">${icon}</div>
+        <div class="desc">${desc}</div>
+        <div class="temps">${d.hi.toFixed(0)}&deg; <span class="lo">/ ${d.lo.toFixed(0)}&deg;</span></div>
+        <div class="meta">
+          <span class="rain">${d.pop}% &middot; ${d.precip.toFixed(1)} mm</span>
+          <span>wind ${d.wind.toFixed(0)} km/h</span>
+        </div>
+      </div>
+    `);
+  });
+</script>
+</body>
+</html>
