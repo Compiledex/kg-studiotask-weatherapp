@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hirakata 7-Day Forecast</title>
+<title>Hirakata Forecast &amp; Norway Quakes</title>
 <style>
   :root {
     --bg: #eef2f7;
@@ -12,110 +12,369 @@
     --muted: #6b7688;
     --accent: #2f6df6;
     --rain: #3a8dde;
+    --border: #e3e8f0;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--ink);
-    padding: 32px 16px;
+    padding: 28px 16px 48px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    min-height: 100vh;
   }
-  header { text-align: center; margin-bottom: 28px; }
-  h1 { font-size: 1.8rem; }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: #dde4ee;
+    padding: 5px;
+    border-radius: 999px;
+    margin-bottom: 26px;
+  }
+  .tabs button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .tabs button.active {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(20,30,60,.12);
+  }
+  .panel { display: none; width: 100%; max-width: 1100px; }
+  .panel.active { display: block; }
+  header { text-align: center; margin-bottom: 24px; }
+  h1 { font-size: 1.7rem; }
   header p { color: var(--muted); margin-top: 6px; font-size: .9rem; }
+
+  /* ---------- weather ---------- */
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 14px;
-    max-width: 1100px;
-    width: 100%;
   }
   .day {
     background: var(--card);
     border-radius: 14px;
-    padding: 18px 14px;
+    padding: 18px 12px;
     text-align: center;
     box-shadow: 0 2px 10px rgba(20,30,60,.07);
   }
   .day .dow { font-weight: 700; font-size: 1.05rem; }
   .day .date { color: var(--muted); font-size: .8rem; margin-bottom: 8px; }
-  .icon { font-size: 2.6rem; line-height: 1; margin: 6px 0; }
-  .desc { font-size: .82rem; color: var(--muted); min-height: 2.4em; margin-bottom: 8px; }
+  .icon { font-size: 2.5rem; line-height: 1; margin: 6px 0; }
+  .desc { font-size: .8rem; color: var(--muted); min-height: 2.4em; margin-bottom: 8px; }
   .temps { font-size: 1.05rem; font-weight: 600; }
   .temps .lo { color: var(--muted); font-weight: 400; }
-  .meta { margin-top: 10px; font-size: .78rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  .meta { margin-top: 10px; font-size: .76rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
   .meta .rain { color: var(--rain); font-weight: 600; }
-  footer { margin-top: 26px; color: var(--muted); font-size: .78rem; text-align: center; }
+
+  /* ---------- quakes ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .stat {
+    border-radius: 14px;
+    padding: 16px 18px;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(20,30,60,.14);
+  }
+  .stat .num { font-size: 1.9rem; font-weight: 800; line-height: 1; }
+  .stat .lbl { font-size: .8rem; opacity: .92; margin-top: 6px; }
+  .s1 { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+  .s2 { background: linear-gradient(135deg,#ef4444,#f97316); }
+  .s3 { background: linear-gradient(135deg,#0ea5e9,#22d3ee); }
+  .s4 { background: linear-gradient(135deg,#10b981,#84cc16); }
+
+  .chartcard {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 20px 14px;
+    box-shadow: 0 2px 10px rgba(20,30,60,.07);
+    margin-bottom: 20px;
+  }
+  .chartcard h2 { font-size: 1.05rem; margin-bottom: 4px; }
+  .chartcard .sub { color: var(--muted); font-size: .82rem; margin-bottom: 14px; }
+  .chartcard svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; font-size: .78rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+  .axis { stroke: var(--border); stroke-width: 1; }
+  .tickline { stroke: #eef1f6; stroke-width: 1; }
+  .ticktext { fill: var(--muted); font-size: 11px; }
+  .dot { cursor: pointer; transition: opacity .12s; }
+  .dot:hover { opacity: 1 !important; stroke: #1a2233; stroke-width: 1.2; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
+  td.mag { font-weight: 700; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; color: #fff; font-weight: 700; font-size: .8rem; }
+
+  #tip {
+    position: fixed;
+    pointer-events: none;
+    background: #1a2233;
+    color: #fff;
+    padding: 8px 11px;
+    border-radius: 8px;
+    font-size: .78rem;
+    line-height: 1.35;
+    max-width: 240px;
+    opacity: 0;
+    transition: opacity .1s;
+    z-index: 10;
+    box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  }
+  #tip b { display: block; font-size: .82rem; }
+
+  footer { margin-top: 8px; color: var(--muted); font-size: .76rem; text-align: center; line-height: 1.5; }
 </style>
 </head>
 <body>
-<header>
-  <h1>Hirakata, Japan &mdash; 7-Day Forecast</h1>
-  <p>Osaka Prefecture &middot; 34.81&deg;N, 135.65&deg;E &middot; Issued 4 Sep 2026 (JST)</p>
-</header>
 
-<div class="grid" id="grid"></div>
+<div class="tabs">
+  <button data-tab="weather" class="active">Hirakata Weather</button>
+  <button data-tab="quakes">Norway Earthquakes</button>
+</div>
 
-<footer>
-  Data: Open-Meteo. Temperatures in &deg;C, precipitation totals in mm, wind in km/h.<br>
-  Forecast confidence drops after day 3&ndash;4; check a live source before travel.
-</footer>
+<!-- ============ WEATHER ============ -->
+<section class="panel active" id="weather">
+  <header>
+    <h1>Hirakata, Japan &mdash; 7-Day Forecast</h1>
+    <p>Osaka Prefecture &middot; 34.81&deg;N, 135.65&deg;E &middot; Issued 4 Sep 2026 (JST)</p>
+  </header>
+  <div class="grid" id="wgrid"></div>
+  <footer style="margin-top:22px">
+    Data: Open-Meteo. Temperatures in &deg;C, precipitation totals in mm, wind in km/h.<br>
+    Forecast confidence drops after day 3&ndash;4; check a live source before travel.
+  </footer>
+</section>
+
+<!-- ============ QUAKES ============ -->
+<section class="panel" id="quakes">
+  <header>
+    <h1>Earthquakes in &amp; around Norway &mdash; Past 50 Years</h1>
+    <p>USGS catalogue &middot; magnitude &ge; 3.0 &middot; 1976&ndash;2026 &middot; mainland, North Sea, Norwegian Sea &amp; border zones</p>
+  </header>
+
+  <div class="stats" id="qstats"></div>
+
+  <div class="chartcard">
+    <h2>Every quake, by year and magnitude</h2>
+    <div class="sub">Each dot is one earthquake &mdash; bigger and redder means stronger. Hover for details.</div>
+    <svg id="scatter" viewBox="0 0 1000 440"></svg>
+    <div class="legend" id="maglegend"></div>
+  </div>
+
+  <div class="chartcard">
+    <h2>Count per year</h2>
+    <div class="sub">The 1980s&ndash;90s spike is mostly better detection and mining-induced tremors near the Sweden border, not a real surge in big quakes.</div>
+    <svg id="bars" viewBox="0 0 1000 300"></svg>
+  </div>
+
+  <div class="chartcard">
+    <h2>Strongest 12 events</h2>
+    <table id="toptable">
+      <thead><tr><th>Date</th><th>Mag</th><th>Location</th><th>Depth</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <footer>
+    Data: U.S. Geological Survey FDSN event catalogue (earthquake.usgs.gov). Region box 58&ndash;71.5&deg;N, 3&ndash;31&deg;E.<br>
+    Small-magnitude completeness varies over time; treat yearly counts as indicative, not exact.
+  </footer>
+</section>
+
+<div id="tip"></div>
 
 <script>
-  const days = [
-    { date: "2026-09-04", code: 63, hi: 24.0, lo: 21.8, precip: 22.7, pop: 97, wind: 6.7 },
-    { date: "2026-09-05", code: 51, hi: 29.1, lo: 20.7, precip: 0.4,  pop: 76, wind: 6.6 },
-    { date: "2026-09-06", code: 61, hi: 27.7, lo: 22.0, precip: 7.4,  pop: 78, wind: 12.2 },
-    { date: "2026-09-07", code: 65, hi: 28.8, lo: 22.0, precip: 61.6, pop: 84, wind: 15.3 },
-    { date: "2026-09-08", code: 95, hi: 25.6, lo: 24.1, precip: 69.0, pop: 58, wind: 14.1 },
-    { date: "2026-09-09", code: 3,  hi: 29.0, lo: 21.9, precip: 0.0,  pop: 54, wind: 16.2 },
-    { date: "2026-09-10", code: 55, hi: 25.5, lo: 20.4, precip: 8.0,  pop: 57, wind: 15.2 }
-  ];
-
-  const wmo = {
-    0:  ["☀️", "Clear sky"],
-    1:  ["\u{1F324}️", "Mainly clear"],
-    2:  ["⛅", "Partly cloudy"],
-    3:  ["☁️", "Overcast"],
-    45: ["\u{1F32B}️", "Fog"],
-    48: ["\u{1F32B}️", "Rime fog"],
-    51: ["\u{1F326}️", "Light drizzle"],
-    53: ["\u{1F326}️", "Moderate drizzle"],
-    55: ["\u{1F327}️", "Dense drizzle"],
-    61: ["\u{1F327}️", "Slight rain"],
-    63: ["\u{1F327}️", "Moderate rain"],
-    65: ["\u{1F327}️", "Heavy rain"],
-    71: ["\u{1F328}️", "Slight snow"],
-    80: ["\u{1F326}️", "Rain showers"],
-    81: ["\u{1F327}️", "Rain showers"],
-    82: ["⛈️", "Violent rain showers"],
-    95: ["⛈️", "Thunderstorm"],
-    96: ["⛈️", "Thunderstorm w/ hail"]
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('active', x === b));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === b.dataset.tab));
   };
+});
 
-  const grid = document.getElementById("grid");
-  days.forEach(d => {
-    const dt = new Date(d.date + "T00:00:00");
-    const dow = dt.toLocaleDateString("en-US", { weekday: "short" });
-    const nice = dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const [icon, desc] = wmo[d.code] || ["❓", "Unknown"];
-    grid.insertAdjacentHTML("beforeend", `
-      <div class="day">
-        <div class="dow">${dow}</div>
-        <div class="date">${nice}</div>
-        <div class="icon">${icon}</div>
-        <div class="desc">${desc}</div>
-        <div class="temps">${d.hi.toFixed(0)}&deg; <span class="lo">/ ${d.lo.toFixed(0)}&deg;</span></div>
-        <div class="meta">
-          <span class="rain">${d.pop}% &middot; ${d.precip.toFixed(1)} mm</span>
-          <span>wind ${d.wind.toFixed(0)} km/h</span>
-        </div>
+/* ---------------- weather ---------------- */
+const wdays = [
+  { date: "2026-09-04", code: 63, hi: 24.0, lo: 21.8, precip: 22.7, pop: 97, wind: 6.7 },
+  { date: "2026-09-05", code: 51, hi: 29.1, lo: 20.7, precip: 0.4,  pop: 76, wind: 6.6 },
+  { date: "2026-09-06", code: 61, hi: 27.7, lo: 22.0, precip: 7.4,  pop: 78, wind: 12.2 },
+  { date: "2026-09-07", code: 65, hi: 28.8, lo: 22.0, precip: 61.6, pop: 84, wind: 15.3 },
+  { date: "2026-09-08", code: 95, hi: 25.6, lo: 24.1, precip: 69.0, pop: 58, wind: 14.1 },
+  { date: "2026-09-09", code: 3,  hi: 29.0, lo: 21.9, precip: 0.0,  pop: 54, wind: 16.2 },
+  { date: "2026-09-10", code: 55, hi: 25.5, lo: 20.4, precip: 8.0,  pop: 57, wind: 15.2 }
+];
+const wmo = {
+  0:["☀️","Clear sky"],1:["\u{1F324}️","Mainly clear"],2:["⛅","Partly cloudy"],
+  3:["☁️","Overcast"],45:["\u{1F32B}️","Fog"],48:["\u{1F32B}️","Rime fog"],
+  51:["\u{1F326}️","Light drizzle"],53:["\u{1F326}️","Moderate drizzle"],55:["\u{1F327}️","Dense drizzle"],
+  61:["\u{1F327}️","Slight rain"],63:["\u{1F327}️","Moderate rain"],65:["\u{1F327}️","Heavy rain"],
+  71:["\u{1F328}️","Slight snow"],80:["\u{1F326}️","Rain showers"],81:["\u{1F327}️","Rain showers"],
+  82:["⛈️","Violent showers"],95:["⛈️","Thunderstorm"],96:["⛈️","Thunderstorm w/ hail"]
+};
+const wgrid = document.getElementById('wgrid');
+wdays.forEach(d => {
+  const dt = new Date(d.date + "T00:00:00");
+  const dow = dt.toLocaleDateString("en-US", { weekday: "short" });
+  const nice = dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const [icon, desc] = wmo[d.code] || ["❓", "Unknown"];
+  wgrid.insertAdjacentHTML('beforeend', `
+    <div class="day">
+      <div class="dow">${dow}</div>
+      <div class="date">${nice}</div>
+      <div class="icon">${icon}</div>
+      <div class="desc">${desc}</div>
+      <div class="temps">${d.hi.toFixed(0)}&deg; <span class="lo">/ ${d.lo.toFixed(0)}&deg;</span></div>
+      <div class="meta">
+        <span class="rain">${d.pop}% &middot; ${d.precip.toFixed(1)} mm</span>
+        <span>wind ${d.wind.toFixed(0)} km/h</span>
       </div>
-    `);
+    </div>`);
+});
+
+/* ---------------- quakes ---------------- */
+const QUAKES = [{"t": "1976-10-25", "lat": 59.157, "lon": 23.725, "depth": 33.0, "mag": 4.5, "place": "22 km N of Taebla, Estonia"}, {"t": "1977-04-30", "lat": 68.151, "lon": 10.533, "depth": 14.0, "mag": 4.1, "place": "105 km WNW of Sørland, Norway"}, {"t": "1980-03-29", "lat": 70.69, "lon": 16.379, "depth": 10.0, "mag": 3.4, "place": "146 km WNW of Hansnes, Norway"}, {"t": "1981-09-03", "lat": 69.418, "lon": 14.201, "depth": 10.0, "mag": 4.5, "place": "66 km NNW of Myre, Norway"}, {"t": "1982-12-09", "lat": 66.313, "lon": 8.066, "depth": 10.0, "mag": 4.4, "place": "190 km WNW of Gladstad, Norway"}, {"t": "1982-12-15", "lat": 62.65, "lon": 4.958, "depth": 10.0, "mag": 3.8, "place": "57 km NW of Ulsteinvik weather pws station, Norway"}, {"t": "1983-01-04", "lat": 68.533, "lon": 22.64, "depth": 10.0, "mag": 3.3, "place": "43 km WNW of Enontekiö, Finland"}, {"t": "1983-03-08", "lat": 59.64, "lon": 5.34, "depth": 33.0, "mag": 4.8, "place": "7 km SSW of Mosterhamn, Norway"}, {"t": "1983-09-29", "lat": 63.85, "lon": 17.553, "depth": 10.0, "mag": 4.1, "place": "36 km SSE of Åsele, Sweden"}, {"t": "1983-10-29", "lat": 59.827, "lon": 6.734, "depth": 10.0, "mag": 3.6, "place": "28 km SSE of Odda, Norway"}, {"t": "1983-11-15", "lat": 66.68, "lon": 13.876, "depth": 10.0, "mag": 3.6, "place": "15 km S of Glomfjord, Norway"}, {"t": "1984-07-27", "lat": 65.977, "lon": 13.066, "depth": 10.0, "mag": 5.4, "place": "11 km SSE of Leland, Norway"}, {"t": "1984-11-12", "lat": 70.561, "lon": 8.666, "depth": 10.0, "mag": 5.2, "place": "Norwegian Sea"}, {"t": "1985-04-02", "lat": 66.98, "lon": 23.53, "depth": 10.0, "mag": 3.2, "place": "26 km SSE of Pajala, Sweden"}, {"t": "1985-04-17", "lat": 61.101, "lon": 5.492, "depth": 10.0, "mag": 3.1, "place": "southern Norway"}, {"t": "1985-07-02", "lat": 60.457, "lon": 4.834, "depth": 10.0, "mag": 3.0, "place": "11 km WNW of Ågotnes, Norway"}, {"t": "1985-09-08", "lat": 61.612, "lon": 3.072, "depth": 10.0, "mag": 3.1, "place": "104 km W of Florø, Norway"}, {"t": "1985-10-01", "lat": 61.522, "lon": 3.547, "depth": 10.0, "mag": 3.0, "place": "79 km W of Florø, Norway"}, {"t": "1985-11-30", "lat": 61.766, "lon": 4.49, "depth": 10.0, "mag": 3.0, "place": "34 km WNW of Florø, Norway"}, {"t": "1986-01-25", "lat": 61.837, "lon": 16.93, "depth": 10.0, "mag": 3.3, "place": "11 km NNW of Sörforsa, Sweden"}, {"t": "1986-02-05", "lat": 62.775, "lon": 4.808, "depth": 29.7, "mag": 5.0, "place": "71 km NW of Ulsteinvik weather pws station, Norway"}, {"t": "1986-04-04", "lat": 71.084, "lon": 8.354, "depth": 10.0, "mag": 4.6, "place": "Norwegian Sea"}, {"t": "1986-06-15", "lat": 62.008, "lon": 4.049, "depth": 10.0, "mag": 3.0, "place": "56 km W of Måløy, Norway"}, {"t": "1986-07-14", "lat": 58.282, "lon": 13.878, "depth": 10.0, "mag": 3.4, "place": "7 km WNW of Olofstorp, Sweden"}, {"t": "1986-07-14", "lat": 58.365, "lon": 13.818, "depth": 10.0, "mag": 4.8, "place": "1 km NNW of Skultorp, Sweden"}, {"t": "1986-07-15", "lat": 66.824, "lon": 13.174, "depth": 10.0, "mag": 3.4, "place": "23 km WSW of Ørnes, Norway"}, {"t": "1986-09-20", "lat": 59.799, "lon": 16.301, "depth": 10.0, "mag": 3.6, "place": "6 km ENE of Ramnäs, Sweden"}, {"t": "1986-10-26", "lat": 61.744, "lon": 3.056, "depth": 10.0, "mag": 4.5, "place": "105 km W of Florø, Norway"}, {"t": "1986-11-02", "lat": 58.81, "lon": 13.545, "depth": 10.0, "mag": 3.6, "place": "19 km NW of Mariestad, Sweden"}, {"t": "1987-02-04", "lat": 62.221, "lon": 3.923, "depth": 10.0, "mag": 3.7, "place": "69 km WNW of Måløy, Norway"}, {"t": "1987-04-04", "lat": 67.261, "lon": 7.76, "depth": 10.0, "mag": 3.1, "place": "215 km WSW of Sørland, Norway"}, {"t": "1987-04-19", "lat": 67.669, "lon": 19.432, "depth": 10.0, "mag": 3.4, "place": "39 km WSW of Kiruna, Sweden"}, {"t": "1987-05-25", "lat": 61.635, "lon": 5.429, "depth": 10.0, "mag": 3.1, "place": "16 km SSE of Svelgen, Norway"}, {"t": "1987-07-23", "lat": 61.858, "lon": 17.537, "depth": 10.0, "mag": 3.0, "place": "25 km SE of Gnarp, Sweden"}, {"t": "1987-07-25", "lat": 60.232, "lon": 13.778, "depth": 10.0, "mag": 3.0, "place": "16 km ENE of Ekshärad, Sweden"}, {"t": "1987-09-05", "lat": 65.686, "lon": 12.318, "depth": 10.0, "mag": 3.4, "place": "16 km E of Gladstad, Norway"}, {"t": "1987-10-19", "lat": 59.757, "lon": 6.681, "depth": 10.0, "mag": 3.0, "place": "21 km ENE of Sauda, Norway"}, {"t": "1987-10-31", "lat": 61.158, "lon": 3.962, "depth": 10.0, "mag": 4.2, "place": "48 km W of Hardbakke, Norway"}, {"t": "1987-11-01", "lat": 65.08, "lon": 11.75, "depth": 10.0, "mag": 3.6, "place": "24 km NNE of Kolvereid, Norway"}, {"t": "1987-12-26", "lat": 59.818, "lon": 6.52, "depth": 10.0, "mag": 3.3, "place": "20 km NNE of Sauda, Norway"}, {"t": "1988-01-31", "lat": 67.851, "lon": 10.129, "depth": 10.0, "mag": 4.3, "place": "110 km W of Sørland, Norway"}, {"t": "1988-05-16", "lat": 67.295, "lon": 21.502, "depth": 10.0, "mag": 3.3, "place": "38 km ENE of Malmberget, Sweden"}, {"t": "1988-08-21", "lat": 66.546, "lon": 12.656, "depth": 10.0, "mag": 3.3, "place": "42 km NNW of Nesna, Norway"}, {"t": "1988-09-01", "lat": 66.991, "lon": 20.913, "depth": 10.0, "mag": 3.0, "place": "19 km SE of Gällivare, Sweden"}, {"t": "1988-09-28", "lat": 68.192, "lon": 10.637, "depth": 10.0, "mag": 3.4, "place": "104 km WNW of Sørland, Norway"}, {"t": "1988-10-20", "lat": 59.959, "lon": 6.493, "depth": 10.0, "mag": 3.8, "place": "12 km SSW of Odda, Norway"}, {"t": "1988-10-27", "lat": 66.943, "lon": 8.77, "depth": 10.0, "mag": 3.0, "place": "187 km WSW of Sørland, Norway"}, {"t": "1988-10-27", "lat": 66.848, "lon": 9.303, "depth": 10.0, "mag": 3.7, "place": "172 km WSW of Sørland, Norway"}, {"t": "1989-01-13", "lat": 62.968, "lon": 6.225, "depth": 10.0, "mag": 3.1, "place": "24 km NNW of Steinshamn, Norway"}, {"t": "1989-01-23", "lat": 61.949, "lon": 4.504, "depth": 32.7, "mag": 5.2, "place": "32 km W of Måløy, Norway"}, {"t": "1989-01-29", "lat": 59.438, "lon": 5.952, "depth": 10.0, "mag": 4.8, "place": "20 km SSE of Ølen, Norway"}, {"t": "1989-02-21", "lat": 65.448, "lon": 28.257, "depth": 10.0, "mag": 3.5, "place": "13 km S of Taivalkoski, Finland"}, {"t": "1989-03-03", "lat": 60.653, "lon": 6.34, "depth": 10.0, "mag": 3.2, "place": "4 km WNW of Voss, Norway"}, {"t": "1989-04-13", "lat": 70.111, "lon": 8.342, "depth": 0.2, "mag": 3.1, "place": "288 km WNW of Straume, Norway"}, {"t": "1989-05-11", "lat": 66.458, "lon": 13.105, "depth": 10.0, "mag": 3.3, "place": "29 km N of Nesna, Norway"}, {"t": "1989-06-14", "lat": 66.958, "lon": 20.614, "depth": 10.0, "mag": 3.1, "place": "19 km S of Gällivare, Sweden"}, {"t": "1989-07-05", "lat": 66.468, "lon": 13.292, "depth": 10.0, "mag": 3.3, "place": "30 km NNW of Hemnesberget, Norway"}, {"t": "1989-07-05", "lat": 66.515, "lon": 12.753, "depth": 10.0, "mag": 3.4, "place": "37 km NNW of Nesna, Norway"}, {"t": "1989-07-25", "lat": 62.801, "lon": 18.579, "depth": 10.0, "mag": 3.4, "place": "37 km ENE of Härnösand, Sweden"}, {"t": "1989-08-02", "lat": 66.521, "lon": 6.89, "depth": 10.0, "mag": 3.4, "place": "247 km WNW of Gladstad, Norway"}, {"t": "1989-11-04", "lat": 64.742, "lon": 30.755, "depth": 10.0, "mag": 3.4, "place": "20 km NNE of Kostomuksha, Russia"}, {"t": "1989-11-08", "lat": 66.983, "lon": 21.691, "depth": 10.0, "mag": 3.0, "place": "48 km ESE of Gällivare, Sweden"}, {"t": "1989-12-01", "lat": 65.233, "lon": 12.028, "depth": 10.0, "mag": 3.0, "place": "10 km SW of Vik, Norway"}, {"t": "1990-01-13", "lat": 64.768, "lon": 5.909, "depth": 33.0, "mag": 3.2, "place": "183 km NW of Sistranda, Norway"}, {"t": "1990-01-19", "lat": 61.857, "lon": 4.715, "depth": 10.0, "mag": 3.4, "place": "22 km WSW of Måløy, Norway"}, {"t": "1990-02-25", "lat": 59.662, "lon": 6.249, "depth": 10.0, "mag": 3.0, "place": "6 km WNW of Sauda, Norway"}, {"t": "1990-04-04", "lat": 61.441, "lon": 5.306, "depth": 10.0, "mag": 3.0, "place": "9 km NNW of Dale, Norway"}, {"t": "1990-04-18", "lat": 66.419, "lon": 14.497, "depth": 5.0, "mag": 3.1, "place": "19 km NE of Mo i Rana, Norway"}, {"t": "1990-05-16", "lat": 66.023, "lon": 6.376, "depth": 33.0, "mag": 3.6, "place": "257 km W of Gladstad, Norway"}, {"t": "1990-05-20", "lat": 68.231, "lon": 10.698, "depth": 33.0, "mag": 3.5, "place": "104 km NW of Sørland, Norway"}, {"t": "1990-06-14", "lat": 60.301, "lon": 5.339, "depth": 10.0, "mag": 3.7, "place": "2 km E of Sandsli, Norway"}, {"t": "1990-07-19", "lat": 64.103, "lon": 5.441, "depth": 10.0, "mag": 3.2, "place": "155 km NNW of Steinshamn, Norway"}, {"t": "1990-09-28", "lat": 66.974, "lon": 20.954, "depth": 10.0, "mag": 3.2, "place": "22 km SE of Gällivare, Sweden"}, {"t": "1990-10-13", "lat": 70.353, "lon": 7.262, "depth": 10.0, "mag": 3.5, "place": "Norwegian Sea"}, {"t": "1990-11-11", "lat": 68.799, "lon": 8.624, "depth": 10.0, "mag": 3.2, "place": "207 km WNW of Reine, Norway"}, {"t": "1990-12-12", "lat": 59.786, "lon": 16.809, "depth": 10.0, "mag": 3.9, "place": "11 km NW of Irsta, Sweden"}, {"t": "1991-01-13", "lat": 65.37, "lon": 6.219, "depth": 10.0, "mag": 3.4, "place": "222 km NW of Sistranda, Norway"}, {"t": "1991-01-17", "lat": 67.951, "lon": 9.67, "depth": 10.0, "mag": 3.4, "place": "131 km WNW of Sørland, Norway"}, {"t": "1991-01-23", "lat": 61.896, "lon": 3.995, "depth": 10.0, "mag": 3.1, "place": "58 km W of Måløy, Norway"}, {"t": "1991-04-06", "lat": 66.927, "lon": 20.849, "depth": 10.0, "mag": 3.0, "place": "24 km SSE of Gällivare, Sweden"}, {"t": "1991-06-06", "lat": 65.383, "lon": 22.897, "depth": 10.0, "mag": 3.1, "place": "41 km ESE of Luleå, Sweden"}, {"t": "1991-07-13", "lat": 67.843, "lon": 24.019, "depth": 10.0, "mag": 3.0, "place": "17 km SE of Muonio, Finland"}, {"t": "1991-08-23", "lat": 59.006, "lon": 5.772, "depth": 10.0, "mag": 3.1, "place": "4 km NNE of Stavanger, Norway"}, {"t": "1991-09-23", "lat": 64.732, "lon": 21.432, "depth": 10.0, "mag": 3.5, "place": "10 km ENE of Skelleftehamn, Sweden"}, {"t": "1991-10-28", "lat": 59.938, "lon": 6.058, "depth": 10.0, "mag": 3.0, "place": "5 km SSE of Rosendal, Norway"}, {"t": "1991-11-07", "lat": 68.314, "lon": 11.363, "depth": 10.0, "mag": 3.7, "place": "83 km WNW of Reine, Norway"}, {"t": "1991-12-15", "lat": 62.204, "lon": 17.518, "depth": 10.0, "mag": 3.4, "place": "9 km SE of Njurundabommen, Sweden"}, {"t": "1991-12-16", "lat": 67.817, "lon": 10.414, "depth": 33.0, "mag": 3.7, "place": "98 km W of Sørland, Norway"}, {"t": "1991-12-31", "lat": 62.159, "lon": 4.136, "depth": 10.0, "mag": 3.5, "place": "56 km WNW of Måløy, Norway"}, {"t": "1992-01-01", "lat": 67.646, "lon": 15.015, "depth": 10.0, "mag": 3.6, "place": "40 km NNE of Løding, Norway"}, {"t": "1992-01-04", "lat": 67.652, "lon": 15.065, "depth": 10.0, "mag": 4.8, "place": "41 km NW of Straumen, Norway"}, {"t": "1992-01-04", "lat": 67.649, "lon": 15.1, "depth": 33.0, "mag": 3.2, "place": "39 km NNW of Straumen, Norway"}, {"t": "1992-01-04", "lat": 67.651, "lon": 15.083, "depth": 10.0, "mag": 4.6, "place": "40 km NNW of Straumen, Norway"}, {"t": "1992-01-04", "lat": 67.649, "lon": 14.8, "depth": 10.0, "mag": 3.0, "place": "38 km N of Løding, Norway"}, {"t": "1992-01-05", "lat": 67.686, "lon": 14.98, "depth": 10.0, "mag": 3.0, "place": "44 km NNE of Løding, Norway"}, {"t": "1992-01-09", "lat": 66.903, "lon": 20.916, "depth": 10.0, "mag": 3.0, "place": "28 km SSE of Gällivare, Sweden"}, {"t": "1992-01-10", "lat": 67.676, "lon": 14.936, "depth": 10.0, "mag": 4.6, "place": "42 km NNE of Løding, Norway"}, {"t": "1992-01-10", "lat": 67.314, "lon": 23.545, "depth": 10.0, "mag": 3.0, "place": "10 km W of Kolari, Finland"}, {"t": "1992-01-13", "lat": 66.893, "lon": 20.983, "depth": 10.0, "mag": 3.4, "place": "30 km SSE of Gällivare, Sweden"}, {"t": "1992-01-22", "lat": 67.636, "lon": 14.994, "depth": 10.0, "mag": 3.3, "place": "38 km NNE of Løding, Norway"}, {"t": "1992-01-25", "lat": 67.763, "lon": 15.298, "depth": 10.0, "mag": 3.0, "place": "48 km NNW of Straumen, Norway"}, {"t": "1992-01-25", "lat": 67.663, "lon": 14.912, "depth": 10.0, "mag": 3.3, "place": "41 km N of Løding, Norway"}, {"t": "1992-02-01", "lat": 67.297, "lon": 30.123, "depth": 10.0, "mag": 3.0, "place": "33 km SSW of Kovdor, Russia"}, {"t": "1992-02-19", "lat": 59.187, "lon": 11.01, "depth": 10.0, "mag": 3.8, "place": "5 km SE of Fredrikstad, Norway"}, {"t": "1992-02-21", "lat": 67.036, "lon": 20.846, "depth": 10.0, "mag": 3.3, "place": "13 km SE of Gällivare, Sweden"}, {"t": "1992-02-25", "lat": 66.751, "lon": 13.805, "depth": 10.0, "mag": 3.0, "place": "9 km SW of Glomfjord, Norway"}, {"t": "1992-03-17", "lat": 66.936, "lon": 20.931, "depth": 10.0, "mag": 3.0, "place": "25 km SSE of Gällivare, Sweden"}, {"t": "1992-03-25", "lat": 64.621, "lon": 30.576, "depth": 10.0, "mag": 3.9, "place": "5 km N of Kostomuksha, Russia"}, {"t": "1992-04-14", "lat": 59.528, "lon": 5.723, "depth": 10.0, "mag": 3.7, "place": "9 km SSW of Ølen, Norway"}, {"t": "1992-04-21", "lat": 67.776, "lon": 14.706, "depth": 10.0, "mag": 3.0, "place": "49 km S of Kabelvåg, Norway"}, {"t": "1992-04-26", "lat": 65.114, "lon": 12.456, "depth": 10.0, "mag": 3.3, "place": "4 km NE of Terråk, Norway"}, {"t": "1992-04-28", "lat": 67.048, "lon": 20.807, "depth": 10.0, "mag": 3.4, "place": "11 km SE of Gällivare, Sweden"}, {"t": "1992-05-05", "lat": 66.431, "lon": 14.887, "depth": 10.0, "mag": 3.0, "place": "35 km ENE of Mo i Rana, Norway"}, {"t": "1992-05-15", "lat": 67.059, "lon": 20.82, "depth": 10.0, "mag": 3.4, "place": "11 km SE of Gällivare, Sweden"}, {"t": "1992-05-18", "lat": 66.838, "lon": 13.871, "depth": 10.0, "mag": 3.5, "place": "3 km NW of Glomfjord, Norway"}, {"t": "1992-05-22", "lat": 63.91, "lon": 21.229, "depth": 10.0, "mag": 3.8, "place": "33 km E of Sävar, Sweden"}, {"t": "1992-05-22", "lat": 66.941, "lon": 20.9, "depth": 10.0, "mag": 3.4, "place": "24 km SSE of Gällivare, Sweden"}, {"t": "1992-05-22", "lat": 61.071, "lon": 4.311, "depth": 10.0, "mag": 3.2, "place": "28 km W of Hardbakke, Norway"}, {"t": "1992-06-12", "lat": 67.639, "lon": 15.042, "depth": 10.0, "mag": 3.1, "place": "39 km NNE of Løding, Norway"}, {"t": "1992-06-25", "lat": 66.951, "lon": 20.954, "depth": 10.0, "mag": 3.4, "place": "24 km SSE of Gällivare, Sweden"}, {"t": "1992-06-27", "lat": 66.807, "lon": 13.393, "depth": 10.0, "mag": 3.2, "place": "15 km WSW of Ørnes, Norway"}, {"t": "1992-06-28", "lat": 62.057, "lon": 4.48, "depth": 10.0, "mag": 3.2, "place": "35 km WNW of Måløy, Norway"}, {"t": "1992-07-11", "lat": 62.441, "lon": 3.458, "depth": 10.0, "mag": 3.0, "place": "102 km WNW of Måløy, Norway"}, {"t": "1992-07-14", "lat": 66.974, "lon": 20.941, "depth": 10.0, "mag": 3.4, "place": "21 km SE of Gällivare, Sweden"}, {"t": "1992-08-03", "lat": 66.4, "lon": 13.238, "depth": 10.0, "mag": 3.6, "place": "24 km NNE of Nesna, Norway"}, {"t": "1992-08-06", "lat": 59.809, "lon": 6.071, "depth": 33.0, "mag": 3.7, "place": "17 km NNE of Etne, Norway"}, {"t": "1992-08-14", "lat": 68.454, "lon": 11.485, "depth": 10.0, "mag": 3.3, "place": "88 km NW of Reine, Norway"}, {"t": "1992-08-20", "lat": 67.066, "lon": 20.831, "depth": 10.0, "mag": 3.2, "place": "10 km SE of Gällivare, Sweden"}, {"t": "1992-09-17", "lat": 66.996, "lon": 20.943, "depth": 10.0, "mag": 3.4, "place": "19 km SE of Gällivare, Sweden"}, {"t": "1992-09-17", "lat": 66.448, "lon": 14.753, "depth": 10.0, "mag": 3.3, "place": "northern Norway"}, {"t": "1992-10-07", "lat": 66.962, "lon": 20.888, "depth": 10.0, "mag": 3.5, "place": "21 km SSE of Gällivare, Sweden"}, {"t": "1992-10-15", "lat": 67.14, "lon": 20.755, "depth": 10.0, "mag": 3.4, "place": "4 km E of Gällivare, Sweden"}, {"t": "1992-10-16", "lat": 67.568, "lon": 15.008, "depth": 10.0, "mag": 3.3, "place": "31 km NNE of Løding, Norway"}, {"t": "1992-10-20", "lat": 67.717, "lon": 20.245, "depth": 10.0, "mag": 3.4, "place": "15 km S of Kiruna, Sweden"}, {"t": "1992-11-03", "lat": 66.93, "lon": 20.93, "depth": 10.0, "mag": 3.6, "place": "25 km SSE of Gällivare, Sweden"}, {"t": "1992-11-10", "lat": 65.985, "lon": 6.11, "depth": 10.0, "mag": 3.4, "place": "268 km WNW of Rørvik, Norway"}, {"t": "1992-11-15", "lat": 67.764, "lon": 20.283, "depth": 10.0, "mag": 3.2, "place": "10 km SSE of Kiruna, Sweden"}, {"t": "1992-11-16", "lat": 67.691, "lon": 15.016, "depth": 10.0, "mag": 3.1, "place": "45 km NNE of Løding, Norway"}, {"t": "1992-11-25", "lat": 66.47, "lon": 14.645, "depth": 10.0, "mag": 3.0, "place": "28 km NE of Mo i Rana, Norway"}, {"t": "1992-11-26", "lat": 67.012, "lon": 20.907, "depth": 10.0, "mag": 3.5, "place": "17 km SE of Gällivare, Sweden"}, {"t": "1992-12-14", "lat": 66.277, "lon": 7.569, "depth": 30.0, "mag": 3.3, "place": "210 km WNW of Gladstad, Norway"}, {"t": "1992-12-17", "lat": 66.971, "lon": 20.817, "depth": 10.0, "mag": 3.2, "place": "19 km SSE of Gällivare, Sweden"}, {"t": "1993-01-05", "lat": 64.74, "lon": 16.894, "depth": 33.0, "mag": 4.2, "place": "17 km NE of Vilhelmina, Sweden"}, {"t": "1993-02-15", "lat": 64.406, "lon": 20.872, "depth": 10.0, "mag": 3.8, "place": "16 km SE of Burträsk, Sweden"}, {"t": "1993-02-18", "lat": 68.102, "lon": 13.767, "depth": 10.0, "mag": 3.4, "place": "8 km SE of Leknes, Norway"}, {"t": "1993-04-11", "lat": 60.167, "lon": 15.206, "depth": 10.0, "mag": 3.7, "place": "2 km NNE of Ludvika, Sweden"}, {"t": "1993-06-06", "lat": 66.917, "lon": 22.408, "depth": 10.0, "mag": 3.1, "place": "53 km SW of Pajala, Sweden"}, {"t": "1993-06-26", "lat": 62.677, "lon": 4.373, "depth": 10.0, "mag": 4.2, "place": "81 km NW of Larsnes, Norway"}, {"t": "1993-06-26", "lat": 62.736, "lon": 3.974, "depth": 10.0, "mag": 4.2, "place": "101 km NW of Larsnes, Norway"}, {"t": "1993-08-16", "lat": 67.006, "lon": 20.961, "depth": 5.0, "mag": 3.0, "place": "19 km SE of Gällivare, Sweden"}, {"t": "1993-08-19", "lat": 67.123, "lon": 20.977, "depth": 10.0, "mag": 3.3, "place": "14 km E of Gällivare, Sweden"}, {"t": "1993-08-21", "lat": 71.493, "lon": 6.181, "depth": 10.0, "mag": 4.2, "place": "Norwegian Sea"}, {"t": "1993-09-09", "lat": 67.045, "lon": 20.953, "depth": 5.0, "mag": 3.3, "place": "16 km SE of Gällivare, Sweden"}, {"t": "1993-09-13", "lat": 66.29, "lon": 6.017, "depth": 10.0, "mag": 3.9, "place": "278 km WNW of Gladstad, Norway"}, {"t": "1993-09-15", "lat": 66.963, "lon": 20.976, "depth": 10.0, "mag": 3.2, "place": "23 km SE of Gällivare, Sweden"}, {"t": "1993-10-28", "lat": 67.792, "lon": 10.321, "depth": 10.0, "mag": 3.1, "place": "101 km W of Sørland, Norway"}, {"t": "1993-11-12", "lat": 59.749, "lon": 12.392, "depth": 10.0, "mag": 3.4, "place": "2 km SE of Åmotfors, Sweden"}, {"t": "1993-11-27", "lat": 60.369, "lon": 11.472, "depth": 10.0, "mag": 3.1, "place": "4 km SW of Sand, Norway"}, {"t": "1994-01-26", "lat": 66.861, "lon": 13.762, "depth": 10.0, "mag": 3.0, "place": "2 km ESE of Ørnes, Norway"}, {"t": "1994-03-29", "lat": 66.903, "lon": 21.815, "depth": 10.0, "mag": 3.0, "place": "56 km ESE of Gällivare, Sweden"}, {"t": "1994-04-17", "lat": 66.943, "lon": 21.156, "depth": 10.0, "mag": 3.0, "place": "30 km SE of Gällivare, Sweden"}, {"t": "1994-04-18", "lat": 67.117, "lon": 20.144, "depth": 10.0, "mag": 3.0, "place": "22 km W of Gällivare, Sweden"}, {"t": "1994-05-10", "lat": 58.049, "lon": 11.143, "depth": 35.0, "mag": 3.2, "place": "24 km SW of Ellös, Sweden"}, {"t": "1994-05-13", "lat": 67.067, "lon": 21.108, "depth": 10.0, "mag": 3.2, "place": "21 km ESE of Gällivare, Sweden"}, {"t": "1994-07-02", "lat": 67.605, "lon": 15.258, "depth": 10.0, "mag": 3.3, "place": "32 km NNW of Straumen, Norway"}, {"t": "1994-07-21", "lat": 70.606, "lon": 16.23, "depth": 10.0, "mag": 3.2, "place": "142 km NNW of Gryllefjord, Norway"}, {"t": "1994-07-27", "lat": 62.744, "lon": 3.687, "depth": 10.0, "mag": 4.2, "place": "114 km WNW of Larsnes, Norway"}, {"t": "1994-07-29", "lat": 66.992, "lon": 21.01, "depth": 5.0, "mag": 3.1, "place": "22 km SE of Gällivare, Sweden"}, {"t": "1994-08-19", "lat": 65.105, "lon": 4.554, "depth": 10.0, "mag": 3.3, "place": "257 km NW of Sistranda, Norway"}, {"t": "1994-08-19", "lat": 69.058, "lon": 30.089, "depth": 5.0, "mag": 3.1, "place": "39 km S of Nikel, Russia"}, {"t": "1994-08-20", "lat": 67.041, "lon": 13.659, "depth": 10.0, "mag": 3.0, "place": "16 km W of Inndyr, Norway"}, {"t": "1994-10-18", "lat": 66.795, "lon": 14.501, "depth": 10.0, "mag": 3.0, "place": "24 km E of Glomfjord, Norway"}, {"t": "1994-10-21", "lat": 68.943, "lon": 30.233, "depth": 10.0, "mag": 3.0, "place": "52 km S of Nikel, Russia"}, {"t": "1994-11-19", "lat": 60.143, "lon": 11.169, "depth": 10.0, "mag": 3.5, "place": "0 km WNW of Jessheim, Norway"}, {"t": "1995-02-01", "lat": 58.624, "lon": 14.02, "depth": 10.0, "mag": 3.4, "place": "11 km SSW of Töreboda, Sweden"}, {"t": "1995-03-05", "lat": 70.446, "lon": 9.022, "depth": 10.0, "mag": 4.0, "place": "288 km NW of Straume, Norway"}, {"t": "1995-03-29", "lat": 66.394, "lon": 13.427, "depth": 10.0, "mag": 3.0, "place": "20 km NNW of Hemnesberget, Norway"}, {"t": "1995-04-17", "lat": 64.596, "lon": 20.446, "depth": 10.0, "mag": 3.7, "place": "13 km NW of Burträsk, Sweden"}, {"t": "1995-06-20", "lat": 61.879, "lon": 3.801, "depth": 10.0, "mag": 3.2, "place": "69 km W of Måløy, Norway"}, {"t": "1995-08-18", "lat": 61.767, "lon": 3.937, "depth": 10.0, "mag": 3.2, "place": "60 km WNW of Florø, Norway"}, {"t": "1995-09-08", "lat": 61.909, "lon": 4.088, "depth": 10.0, "mag": 3.0, "place": "53 km W of Måløy, Norway"}, {"t": "1995-09-09", "lat": 61.845, "lon": 4.11, "depth": 10.0, "mag": 3.3, "place": "53 km W of Måløy, Norway"}, {"t": "1995-09-17", "lat": 61.789, "lon": 3.827, "depth": 10.0, "mag": 3.1, "place": "67 km WNW of Florø, Norway"}, {"t": "1995-09-24", "lat": 70.796, "lon": 9.358, "depth": 10.0, "mag": 3.1, "place": "Norwegian Sea"}, {"t": "1995-11-13", "lat": 61.714, "lon": 3.998, "depth": 10.0, "mag": 3.6, "place": "56 km WNW of Florø, Norway"}, {"t": "1995-12-15", "lat": 67.918, "lon": 9.859, "depth": 10.0, "mag": 3.4, "place": "123 km WNW of Sørland, Norway"}, {"t": "1996-01-21", "lat": 69.379, "lon": 23.371, "depth": 10.0, "mag": 3.7, "place": "42 km NNE of Kautokeino, Norway"}, {"t": "1996-10-31", "lat": 62.001, "lon": 3.472, "depth": 10.0, "mag": 3.3, "place": "86 km W of Måløy, Norway"}, {"t": "1997-12-20", "lat": 67.578, "lon": 11.33, "depth": 10.0, "mag": 4.7, "place": "58 km W of Sørland, Norway"}, {"t": "1998-10-12", "lat": 63.318, "lon": 18.112, "depth": 10.0, "mag": 3.4, "place": "14 km S of Bredbyn, Sweden"}, {"t": "1999-05-29", "lat": 61.986, "lon": 4.762, "depth": 10.0, "mag": 3.5, "place": "19 km WNW of Måløy, Norway"}, {"t": "2000-05-05", "lat": 60.396, "lon": 3.028, "depth": 10.0, "mag": 4.5, "place": "101 km WSW of Fedje, Norway"}, {"t": "2000-08-12", "lat": 59.547, "lon": 5.061, "depth": 10.0, "mag": 4.1, "place": "16 km W of Sveio, Norway"}, {"t": "2000-11-29", "lat": 58.943, "lon": 11.336, "depth": 10.0, "mag": 3.4, "place": "9 km E of Strömstad, Sweden"}, {"t": "2000-12-08", "lat": 59.995, "lon": 4.591, "depth": 10.0, "mag": 3.6, "place": "37 km WSW of Storebø, Norway"}, {"t": "2001-01-06", "lat": 70.012, "lon": 6.703, "depth": 10.0, "mag": 4.4, "place": "Norwegian Sea"}, {"t": "2001-03-31", "lat": 66.411, "lon": 13.31, "depth": 10.0, "mag": 3.8, "place": "24 km NNW of Hemnesberget, Norway"}, {"t": "2001-04-16", "lat": 66.359, "lon": 13.392, "depth": 10.0, "mag": 3.1, "place": "18 km NW of Hemnesberget, Norway"}, {"t": "2001-06-01", "lat": 61.928, "lon": 3.37, "depth": 10.0, "mag": 3.5, "place": "91 km W of Måløy, Norway"}, {"t": "2002-09-06", "lat": 61.665, "lon": 3.399, "depth": 10.0, "mag": 3.1, "place": "86 km W of Florø, Norway"}, {"t": "2003-08-04", "lat": 65.989, "lon": 5.477, "depth": 10.0, "mag": 5.1, "place": "295 km WNW of Rørvik, Norway"}, {"t": "2003-08-04", "lat": 66.029, "lon": 5.628, "depth": 10.0, "mag": 4.4, "place": "290 km WNW of Rørvik, Norway"}, {"t": "2004-02-27", "lat": 61.18, "lon": 3.843, "depth": 5.0, "mag": 3.1, "place": "55 km WNW of Hardbakke, Norway"}, {"t": "2004-04-07", "lat": 60.498, "lon": 11.505, "depth": 22.9, "mag": 3.4, "place": "11 km N of Sand, Norway"}, {"t": "2004-04-11", "lat": 65.188, "lon": 7.002, "depth": 10.0, "mag": 4.0, "place": "185 km NNW of Sistranda, Norway"}, {"t": "2004-06-29", "lat": 59.555, "lon": 7.67, "depth": 8.0, "mag": 3.1, "place": "17 km E of Hovden, Norway"}, {"t": "2005-01-16", "lat": 62.817, "lon": 6.153, "depth": 15.0, "mag": 3.3, "place": "16 km WNW of Steinshamn, Norway"}, {"t": "2005-05-13", "lat": 62.456, "lon": 17.641, "depth": 5.0, "mag": 3.2, "place": "8 km SE of Söråker, Sweden"}, {"t": "2005-06-24", "lat": 66.49, "lon": 13.376, "depth": 3.1, "mag": 3.3, "place": "31 km NNW of Hemnesberget, Norway"}, {"t": "2005-06-28", "lat": 65.441, "lon": 18.148, "depth": 22.1, "mag": 3.1, "place": "30 km ESE of Sorsele, Sweden"}, {"t": "2005-08-20", "lat": 70.926, "lon": 8.984, "depth": 10.0, "mag": 4.8, "place": "Norwegian Sea"}, {"t": "2006-07-19", "lat": 67.916, "lon": 10.326, "depth": 10.0, "mag": 4.1, "place": "103 km WNW of Sørland, Norway"}, {"t": "2006-08-09", "lat": 60.887, "lon": 4.031, "depth": 12.3, "mag": 3.0, "place": "39 km WNW of Fedje, Norway"}, {"t": "2007-01-21", "lat": 62.631, "lon": 6.591, "depth": 10.0, "mag": 3.7, "place": "6 km SW of Midsund, Norway"}, {"t": "2007-03-19", "lat": 67.15, "lon": 20.9, "depth": 0.0, "mag": 3.1, "place": "10 km E of Gällivare, Sweden"}, {"t": "2007-05-22", "lat": 67.947, "lon": 10.12, "depth": 10.0, "mag": 3.0, "place": "113 km WNW of Sørland, Norway"}, {"t": "2007-05-25", "lat": 59.803, "lon": 4.708, "depth": 0.0, "mag": 3.2, "place": "31 km W of Rubbestadneset, Norway"}, {"t": "2007-06-07", "lat": 66.25, "lon": 7.93, "depth": 10.0, "mag": 3.8, "place": "194 km WNW of Gladstad, Norway"}, {"t": "2007-06-08", "lat": 68.27, "lon": 10.38, "depth": 10.0, "mag": 3.0, "place": "118 km WNW of Sørland, Norway"}, {"t": "2007-09-13", "lat": 68.13, "lon": 9.65, "depth": 10.0, "mag": 3.0, "place": "138 km WNW of Sørland, Norway"}, {"t": "2008-04-11", "lat": 67.82, "lon": 15.16, "depth": 0.1, "mag": 3.4, "place": "52 km SSE of Kabelvåg, Norway"}, {"t": "2010-06-15", "lat": 64.495, "lon": 21.248, "depth": 21.6, "mag": 4.1, "place": "13 km S of Bureå, Sweden"}, {"t": "2010-06-15", "lat": 70.224, "lon": 13.049, "depth": 10.0, "mag": 4.2, "place": "156 km NW of Andenes, Norway"}, {"t": "2010-09-24", "lat": 68.225, "lon": 13.819, "depth": 19.4, "mag": 4.0, "place": "5 km SE of Evjen, Norway"}, {"t": "2012-03-14", "lat": 59.535, "lon": 5.602, "depth": 6.2, "mag": 3.6, "place": "13 km WSW of Ølen, Norway"}, {"t": "2012-03-24", "lat": 60.634, "lon": 4.537, "depth": 30.4, "mag": 3.2, "place": "18 km SSW of Fedje, Norway"}, {"t": "2014-06-07", "lat": 66.835, "lon": 10.026, "depth": 10.0, "mag": 4.2, "place": "147 km NW of Sandnessjøen, Norway"}, {"t": "2014-09-15", "lat": 61.551, "lon": 14.439, "depth": 15.8, "mag": 4.6, "place": "41 km NNE of Älvdalen, Sweden"}, {"t": "2015-07-30", "lat": 67.13, "lon": 20.658, "depth": 16.0, "mag": 4.0, "place": "0 km SSE of Gällivare, Sweden"}, {"t": "2016-03-19", "lat": 65.062, "lon": 22.512, "depth": 14.9, "mag": 4.2, "place": "56 km ESE of Piteå, Sweden"}, {"t": "2017-11-07", "lat": 60.577, "lon": 4.686, "depth": 4.9, "mag": 4.0, "place": "20 km WSW of Manger, Norway"}, {"t": "2017-12-07", "lat": 64.852, "lon": 25.29, "depth": 10.0, "mag": 3.5, "place": "5 km ENE of Lumijoki, Finland"}, {"t": "2018-06-27", "lat": 65.728, "lon": 22.951, "depth": 10.0, "mag": 3.5, "place": "15 km SSW of Rolfs, Sweden"}, {"t": "2018-11-12", "lat": 71.461, "lon": 13.59, "depth": 10.0, "mag": 4.6, "place": "257 km NNW of Andenes, Norway"}, {"t": "2019-12-12", "lat": 64.153, "lon": 5.761, "depth": 10.0, "mag": 4.2, "place": "151 km NW of Kristiansund, Norway"}, {"t": "2020-06-06", "lat": 70.651, "lon": 12.192, "depth": 10.0, "mag": 4.5, "place": "211 km NW of Andenes, Norway"}, {"t": "2021-12-02", "lat": 67.853, "lon": 10.178, "depth": 10.0, "mag": 4.4, "place": "108 km W of Sørland, Norway"}, {"t": "2022-08-26", "lat": 62.666, "lon": 3.475, "depth": 10.0, "mag": 3.8, "place": "117 km NW of M?l?y, Norway"}, {"t": "2023-11-08", "lat": 66.654, "lon": 13.835, "depth": 10.0, "mag": 4.6, "place": "18 km SSW of Glomfjord, Norway"}, {"t": "2025-01-12", "lat": 62.311, "lon": 4.782, "depth": 10.0, "mag": 4.5, "place": "43 km WNW of Larsnes, Norway"}, {"t": "2026-04-22", "lat": 67.846, "lon": 10.309, "depth": 10.0, "mag": 4.0, "place": "102 km W of Sørland, Norway"}, {"t": "2026-04-26", "lat": 59.975, "lon": 11.253, "depth": 10.0, "mag": 3.9, "place": "1 km SSE of Sørumsand, Norway"}, {"t": "2026-08-19", "lat": 66.952, "lon": 13.056, "depth": 10.0, "mag": 4.5, "place": "29 km WNW of Ørnes, Norway"}];
+
+function magColor(m) {
+  if (m >= 5.0) return '#ef4444';
+  if (m >= 4.5) return '#f97316';
+  if (m >= 4.0) return '#eab308';
+  if (m >= 3.5) return '#84cc16';
+  return '#22c55e';
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+function el(name, attrs, parent) {
+  const n = document.createElementNS(SVGNS, name);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+const years = QUAKES.map(q => +q.t.slice(0, 4));
+const minY = Math.min(...years), maxY = Math.max(...years);
+const mags = QUAKES.map(q => q.mag);
+const biggest = QUAKES.reduce((a, b) => b.mag > a.mag ? b : a);
+const cnt = {};
+years.forEach(y => cnt[y] = (cnt[y] || 0) + 1);
+const busiest = Object.entries(cnt).reduce((a, b) => b[1] > a[1] ? b : a);
+const strong = QUAKES.filter(q => q.mag >= 4).length;
+
+/* stat cards */
+document.getElementById('qstats').innerHTML = `
+  <div class="stat s1"><div class="num">${QUAKES.length}</div><div class="lbl">quakes M&ge;3.0 since ${minY}</div></div>
+  <div class="stat s2"><div class="num">M ${biggest.mag.toFixed(1)}</div><div class="lbl">strongest &mdash; ${biggest.t}, ${biggest.place.replace(/, Norway$/, '')}</div></div>
+  <div class="stat s3"><div class="num">${strong}</div><div class="lbl">events of M&ge;4.0</div></div>
+  <div class="stat s4"><div class="num">${busiest[0]}</div><div class="lbl">busiest year (${busiest[1]} events)</div></div>`;
+
+/* legend */
+document.getElementById('maglegend').innerHTML = [
+  ['#22c55e', 'M 3.0–3.4'], ['#84cc16', 'M 3.5–3.9'], ['#eab308', 'M 4.0–4.4'],
+  ['#f97316', 'M 4.5–4.9'], ['#ef4444', 'M 5.0+']
+].map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join('');
+
+/* scatter */
+(function () {
+  const W = 1000, H = 440, pl = 46, pr = 14, pt = 14, pb = 34;
+  const svg = document.getElementById('scatter');
+  const x0 = minY - 0.6, x1 = maxY + 0.6;
+  const y0 = 2.8, y1 = Math.ceil(Math.max(...mags) * 2) / 2 + 0.1;
+  const sx = y => pl + (y - x0) / (x1 - x0) * (W - pl - pr);
+  const sy = m => H - pb - (m - y0) / (y1 - y0) * (H - pt - pb);
+
+  for (let m = 3; m <= y1; m += 0.5) {
+    el('line', { x1: pl, y1: sy(m), x2: W - pr, y2: sy(m), class: 'tickline' }, svg);
+    el('text', { x: pl - 8, y: sy(m) + 4, 'text-anchor': 'end', class: 'ticktext' }, svg).textContent = m.toFixed(1);
+  }
+  for (let y = Math.ceil(minY / 5) * 5; y <= maxY; y += 5) {
+    el('text', { x: sx(y), y: H - pb + 18, 'text-anchor': 'middle', class: 'ticktext' }, svg).textContent = y;
+  }
+  el('line', { x1: pl, y1: pt, x2: pl, y2: H - pb, class: 'axis' }, svg);
+  el('line', { x1: pl, y1: H - pb, x2: W - pr, y2: H - pb, class: 'axis' }, svg);
+  el('text', { x: 12, y: pt + 4, class: 'ticktext', transform: `rotate(-90 12 ${pt + 4})` }, svg).textContent = 'magnitude';
+
+  QUAKES.forEach(q => {
+    const yr = +q.t.slice(0, 4) + (+q.t.slice(5, 7) - 1) / 12;
+    const c = el('circle', {
+      cx: sx(yr), cy: sy(q.mag), r: (q.mag - 2.3) * 2.4,
+      fill: magColor(q.mag), 'fill-opacity': 0.72, class: 'dot'
+    }, svg);
+    c.addEventListener('mousemove', e => showTip(e, q));
+    c.addEventListener('mouseleave', hideTip);
   });
+})();
+
+/* yearly bars */
+(function () {
+  const W = 1000, H = 300, pl = 34, pr = 14, pt = 12, pb = 30;
+  const svg = document.getElementById('bars');
+  const maxC = Math.max(...Object.values(cnt));
+  const n = maxY - minY + 1;
+  const bw = (W - pl - pr) / n;
+  for (let t = 0; t <= maxC; t += (maxC > 20 ? 10 : 5)) {
+    const yy = H - pb - t / maxC * (H - pt - pb);
+    el('line', { x1: pl, y1: yy, x2: W - pr, y2: yy, class: 'tickline' }, svg);
+    el('text', { x: pl - 6, y: yy + 4, 'text-anchor': 'end', class: 'ticktext' }, svg).textContent = t;
+  }
+  for (let y = minY; y <= maxY; y++) {
+    const c = cnt[y] || 0;
+    const h = c / maxC * (H - pt - pb);
+    const yearQuakes = QUAKES.filter(q => +q.t.slice(0, 4) === y);
+    const mx = yearQuakes.length ? Math.max(...yearQuakes.map(q => q.mag)) : 0;
+    const rect = el('rect', {
+      x: pl + (y - minY) * bw + 1, y: H - pb - h, width: Math.max(bw - 2, 1), height: h,
+      fill: mx ? magColor(mx) : '#cbd5e1', rx: 2, 'fill-opacity': 0.85
+    }, svg);
+    rect.addEventListener('mousemove', e => showTipText(e, `<b>${y}</b>${c} quake${c === 1 ? '' : 's'} &middot; strongest M ${mx.toFixed(1)}`));
+    rect.addEventListener('mouseleave', hideTip);
+    if ((y - minY) % 5 === 0)
+      el('text', { x: pl + (y - minY) * bw + bw / 2, y: H - pb + 16, 'text-anchor': 'middle', class: 'ticktext' }, svg).textContent = y;
+  }
+  el('line', { x1: pl, y1: H - pb, x2: W - pr, y2: H - pb, class: 'axis' }, svg);
+})();
+
+/* top table */
+document.querySelector('#toptable tbody').innerHTML = [...QUAKES]
+  .sort((a, b) => b.mag - a.mag).slice(0, 12)
+  .map(q => `<tr>
+    <td>${q.t}</td>
+    <td class="mag"><span class="pill" style="background:${magColor(q.mag)}">${q.mag.toFixed(1)}</span></td>
+    <td>${q.place}</td>
+    <td>${q.depth != null ? q.depth + ' km' : '—'}</td>
+  </tr>`).join('');
+
+/* tooltip */
+const tip = document.getElementById('tip');
+function showTip(e, q) {
+  showTipText(e, `<b>M ${q.mag.toFixed(1)} &middot; ${q.t}</b>${q.place}<br>depth ${q.depth != null ? q.depth + ' km' : 'n/a'}`);
+}
+function showTipText(e, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = 1;
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > innerWidth) x = e.clientX - r.width - pad;
+  if (y + r.height > innerHeight) y = e.clientY - r.height - pad;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+function hideTip() { tip.style.opacity = 0; }
 </script>
 </body>
 </html>
