@@ -1,4 +1,4 @@
-# kg-class-demo
+# kg-studiotask-weatherapp
 
 A single self-contained `index.html` page with three tabs:
 
@@ -15,7 +15,7 @@ baked into the file, so it works offline once loaded.
 
 ## Viewing it
 
-- **Live:** [DEMO](https://compiledex.github.io/kg-class-demo/)
+- **Live:** [DEMO](https://compiledex.github.io/kg-studiotask-weatherapp/)
 - **Local:** open `index.html` in any browser.
 
 ## Data sources
