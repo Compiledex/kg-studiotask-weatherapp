@@ -10,8 +10,12 @@ A single self-contained `index.html` page with three tabs:
    shown as an epicentre map, a year/magnitude scatter, a per-year bar chart, stat cards
    and a "strongest events" table.
 
-No build step, no dependencies. All charts and the map are hand-drawn inline SVG; all data is
-baked into the file, so it works offline once loaded.
+No build step, no dependencies. All charts and the map are hand-drawn inline SVG.
+
+The forecast is fetched live from Open-Meteo on load, so it is always the current seven days.
+A snapshot is still baked into the file and rendered first: the page draws instantly, works
+without a network, and degrades to that snapshot — clearly labelled as saved — if the API
+cannot be reached. The earthquake data is historical and stays baked in permanently.
 
 ## Viewing it
 
@@ -22,22 +26,27 @@ baked into the file, so it works offline once loaded.
 
 | Data | Source | Notes |
 |------|--------|-------|
-| Weather forecast | [Open-Meteo](https://open-meteo.com/) | Hirakata and Bergen, snapshot taken 4 Sep 2026; values are hard-coded, not live. |
+| Weather forecast | [Open-Meteo](https://open-meteo.com/) | Hirakata and Bergen, fetched live on load (no API key, CORS-enabled) and cached in `localStorage` for an hour. The baked-in 4 Sep 2026 snapshot is the offline fallback. |
 | Earthquakes | [USGS FDSN event catalogue](https://earthquake.usgs.gov/fdsnws/event/1/) | Region box 58–71.5°N, 3–31°E; magnitude ≥ 3.0. Includes mainland, North Sea, Norwegian Sea and border zones. |
 | Coastline | [Natural Earth](https://www.naturalearthdata.com/) 1:110m (via [world.geo.json](https://github.com/johan/world.geo.json)) | Low-resolution outlines for Norway, Sweden and Finland. |
 
 ### Caveats
 
-- The forecast is a fixed snapshot – it will not update. Regenerate it for a current forecast.
+- If Open-Meteo is unreachable the page falls back to the baked snapshot from 4 Sep 2026. It
+  says so in the header rather than presenting old days as a current forecast.
+- Forecast values come straight from the model with no smoothing; day 5–7 figures move a lot
+  between refreshes.
 - Earthquake catalogue completeness for small magnitudes varies over time. The 1980s–90s spike
   in yearly counts is mostly improved detection plus mining-induced tremors near Kiruna–Gällivare,
   not a real increase in seismic activity.
 - Epicentres are projected with a simple equirectangular (plate carrée) projection with a
   cos-latitude correction – fine for a schematic map, not survey-grade.
 
-## Regenerating the data
+## Regenerating the baked data
 
-The page is assembled by a small Python script that fetches the raw data and inlines it:
+Only needed for the earthquake catalogue and the fallback snapshot — the forecast shown to
+visitors refreshes itself. The page was originally assembled by a small Python script that
+fetches the raw data and inlines it:
 
 ```bash
 # 1. Earthquakes -> CSV
